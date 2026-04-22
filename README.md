@@ -36,15 +36,6 @@ Implemented in `0.1.0`:
 - Play history read/create/update/delete/export helpers.
 - Typed event parsing for queue, play-history, and saved-queue events.
 
-Planned follow-ups:
-
-- Saved requests client.
-- Commands client.
-- Action log client.
-- Overlay client.
-- Multipart attribute image upload.
-- More test fixtures from real-world API payloads.
-
 ## Install
 
 Published builds are intended to be consumed through JitPack:
@@ -204,14 +195,6 @@ val sessionFuture = client.events().connect(
 
 Contributions are welcome. This project is intended to be useful beyond ai_licia, so issues and pull requests from
 anyone building on StreamerSonglist are encouraged.
-
-Good contribution candidates:
-
-- Missing endpoint clients from the public API reference.
-- Stronger request/response models when the OpenAPI schema is too generic.
-- Event payload fixtures and parser coverage.
-- Documentation examples for common bot, overlay, and backend-service flows.
-- Compatibility fixes for Java/Kotlin consumers.
 
 Before opening a PR:
 
