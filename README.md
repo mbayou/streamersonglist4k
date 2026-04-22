@@ -1,11 +1,49 @@
 # streamersonglist4k
 
-Kotlin/JVM client for the documented StreamerSonglist API.
+Kotlin/JVM client for the new StreamerSonglist API.
 
-This library targets the StreamerSonglist V2 API described by:
+`streamersonglist4k` is built and maintained by [NovaSquare Ltd](https://novasquare.io), the editor of
+[ai_licia](https://getailicia.com), the ultimate co-host for online communities.
+
+We built this client while integrating StreamerSonglist into ai_licia and made it open source for anyone who wants to
+build Kotlin applications, bots, dashboards, overlays, workflow tools, or community automation on top of the new
+StreamerSonglist API.
+
+## Why Use It?
+
+- Strongly typed Kotlin models for StreamerSonglist resources.
+- OAuth and streamer-token authentication support.
+- Queue, songs, attributes, play history, streamer, and user clients.
+- Centrifugo event helpers for realtime queue updates.
+- Java 21 / Kotlin JVM library with no framework dependency.
+- Designed for backend services, desktop apps, bots, and automation tools.
+
+## API Coverage
+
+The current release targets the documented StreamerSonglist V2 API:
 
 - https://dev.staging.streamersonglist.com/docs/overview
 - https://api.staging.streamersonglist.com/openapi.json
+
+Implemented in `0.1.0`:
+
+- OAuth authorization URL, authorization-code exchange, client credentials, and refresh token helpers.
+- Streamer access token and OAuth bearer token authentication.
+- Streamers and authenticated-user endpoints.
+- Queue read/create/update/delete, mark played, and request management.
+- Songs read/search/create/update/delete/export/bulk-update helpers.
+- Attributes read/create/update/delete helpers.
+- Play history read/create/update/delete/export helpers.
+- Typed event parsing for queue, play-history, and saved-queue events.
+
+Planned follow-ups:
+
+- Saved requests client.
+- Commands client.
+- Action log client.
+- Overlay client.
+- Multipart attribute image upload.
+- More test fixtures from real-world API payloads.
 
 ## Install
 
@@ -19,6 +57,30 @@ repositories {
 dependencies {
     implementation("com.github.mbayou:streamersonglist4k:0.1.0")
 }
+```
+
+## Quick Start
+
+```kotlin
+import com.mbayou.streamersonglist4k.StreamerSonglistClient
+import com.mbayou.streamersonglist4k.StreamerSonglistConfiguration
+import com.mbayou.streamersonglist4k.api.StreamerId
+import com.mbayou.streamersonglist4k.api.StreamerLookup
+import com.mbayou.streamersonglist4k.api.StreamerSonglistAuthentication
+
+val configuration = StreamerSonglistConfiguration.builder()
+    .clientId(System.getenv("SSL_CLIENT_ID"))
+    .clientSecret(System.getenv("SSL_CLIENT_SECRET"))
+    .redirectUri("https://example.com/oauth/streamersonglist/callback")
+    .build()
+
+val client = StreamerSonglistClient(
+    configuration,
+    defaultAuthentication = StreamerSonglistAuthentication.OAuthAccessToken("<access-token>")
+)
+
+val queue = client.queue().getQueue(StreamerLookup.ById(StreamerId(123)))
+println("Queue size: ${queue.total}")
 ```
 
 ## Configure
@@ -138,8 +200,53 @@ val sessionFuture = client.events().connect(
 }
 ```
 
-## Design Boundary
+## Contributing
 
-This library talks to StreamerSonglist. It intentionally does not contain ai_licia-specific behavior such as raider grace windows, action execution, persistence, channel event emission, or Spring wiring.
+Contributions are welcome. This project is intended to be useful beyond ai_licia, so issues and pull requests from
+anyone building on StreamerSonglist are encouraged.
 
-Product workflows should compose this client from the application layer.
+Good contribution candidates:
+
+- Missing endpoint clients from the public API reference.
+- Stronger request/response models when the OpenAPI schema is too generic.
+- Event payload fixtures and parser coverage.
+- Documentation examples for common bot, overlay, and backend-service flows.
+- Compatibility fixes for Java/Kotlin consumers.
+
+Before opening a PR:
+
+1. Keep public APIs strongly typed. Avoid exposing `Map<String, Any?>` or raw strings when a typed model or enum is practical.
+2. Keep framework-specific code out of the library. Consumers should be able to use it from Spring, Ktor, desktop apps, CLI tools, or plain JVM services.
+3. Add or update focused tests for behavior that can regress.
+4. Run:
+
+```bash
+gradle clean test --console=plain
+```
+
+5. Describe the StreamerSonglist endpoint or payload your change covers, and link the relevant documentation when possible.
+
+## Development
+
+Requirements:
+
+- JDK 21
+- Gradle 9 installed locally
+
+Common commands:
+
+```bash
+gradle test --console=plain
+gradle clean build --console=plain
+```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+
+## About ai_licia
+
+[ai_licia](https://getailicia.com) is the ultimate co-host for online communities. It helps streamers create more
+reactive, entertaining, and community-aware live experiences across chat, games, overlays, integrations, and automation.
+
+`streamersonglist4k` is one of the open source building blocks NovaSquare maintains for the creator-tech ecosystem.
