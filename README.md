@@ -1,4 +1,4 @@
-# streamersonglist4k
+# streamersonglist4k [![](https://jitpack.io/v/mbayou/streamersonglist4k.svg)](https://jitpack.io/#mbayou/streamersonglist4k)
 
 Kotlin/JVM client for the new StreamerSonglist API.
 
