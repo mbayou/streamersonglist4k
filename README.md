@@ -2,7 +2,7 @@
 
 Kotlin/JVM client for the new StreamerSonglist API.
 
-`streamersonglist4k` is built and maintained by [NovaSquare Ltd](https://novasquare.io), the editor of
+`streamersonglist4k` is built and maintained by [NovaSquare Ltd](https://www.getailicia.com/about-us), the editor of
 [ai_licia](https://getailicia.com), the ultimate co-host for online communities.
 
 We built this client while integrating StreamerSonglist into ai_licia and made it open source for anyone who wants to
