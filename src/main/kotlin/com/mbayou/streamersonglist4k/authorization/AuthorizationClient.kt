@@ -35,7 +35,7 @@ class AuthorizationClient(
         params.filterValues { it != null }.forEach { (key, value) ->
             query.add("${encode(key)}=${encode(value!!)}")
         }
-        return "${configuration.oAuthBaseUrl}/authorize?$query"
+        return "${configuration.oAuthBaseUrl}/auth?$query"
     }
 
     fun exchangeAuthorizationCode(code: String): OAuthTokenResponse {

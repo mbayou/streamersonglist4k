@@ -15,8 +15,8 @@ implementation("com.github.mbayou:streamersonglist4k:<version>")
    - `./gradlew clean test --console=plain`
 3. Commit the release changes.
 4. Tag the commit.
-   - `git tag 0.2.1 && git tag v0.2.1`
-   - `git push origin 0.2.1 v0.2.1`
+   - `git tag 0.2.2 && git tag v0.2.2`
+   - `git push origin 0.2.2 v0.2.2`
 5. Trigger JitPack.
    - Open `https://jitpack.io/#mbayou/streamersonglist4k`
    - Select the tag and click **Get it**.

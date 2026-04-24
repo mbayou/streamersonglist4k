@@ -11,6 +11,22 @@ import kotlin.test.assertContains
 
 class AuthorizationClientTest {
     @Test
+    fun `default oauth configuration targets the current staging issuer`() {
+        val configuration = StreamerSonglistConfiguration.builder()
+            .clientId("client-id")
+            .clientSecret("client-secret")
+            .redirectUri("https://app.example/callback")
+            .build()
+        val client = AuthorizationClient(HttpClient.newHttpClient(), ObjectMapper(), configuration)
+
+        val url = client.authorizationUrl(
+            scopes = listOf(StreamerSonglistScope.resource(ScopeResource.STREAMER_QUEUE, ScopePermission.READ))
+        )
+
+        assertContains(url, "https://id.staging.streamersonglist.com/oauth2/auth?")
+    }
+
+    @Test
     fun `authorizationUrl builds an authorization-code url with encoded scopes and state`() {
         val configuration = StreamerSonglistConfiguration.builder()
             .clientId("client-id")
@@ -29,7 +45,7 @@ class AuthorizationClientTest {
             nonce = "nonce value",
         )
 
-        assertContains(url, "https://id.staging.streamersonglist.com/oauth2/authorize?")
+        assertContains(url, "https://id.staging.streamersonglist.com/oauth2/auth?")
         assertContains(url, "client_id=client-id")
         assertContains(url, "redirect_uri=https%3A%2F%2Fapp.example%2Fcallback")
         assertContains(url, "scope=streamer.queue.r+streamer.song.*")
