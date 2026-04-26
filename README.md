@@ -25,7 +25,7 @@ The current release targets the documented StreamerSonglist V2 API:
 - https://dev.staging.streamersonglist.com/docs/overview
 - https://api.staging.streamersonglist.com/openapi.json
 
-Implemented in `0.2.2`:
+Implemented in `0.2.3`:
 
 - OAuth authorization URL, authorization-code exchange, client credentials, and refresh token helpers.
 - Streamer access token and OAuth bearer token authentication.
@@ -46,7 +46,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.mbayou:streamersonglist4k:v0.2.2")
+    implementation("com.github.mbayou:streamersonglist4k:v0.2.3")
 }
 ```
 

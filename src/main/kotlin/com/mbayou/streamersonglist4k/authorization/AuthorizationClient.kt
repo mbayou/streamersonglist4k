@@ -90,7 +90,8 @@ class AuthorizationClient(
             val error = runCatching { mapper.readValue(body, ErrorModel::class.java) }.getOrNull()
             throw StreamerSonglistApiException(response.statusCode(), error, body)
         }
-        return mapper.readValue(body, OAuthTokenResponse::class.java)
+        val tokenResponse = mapper.readValue(body, OAuthTokenResponse::class.java)
+        return tokenResponse.copy(rawResponseBody = body)
     }
 
     private fun send(request: HttpRequest): HttpResponse<String> {
