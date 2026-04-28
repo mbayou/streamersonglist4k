@@ -8,9 +8,14 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.mbayou.streamersonglist4k.StreamerSonglistConfiguration
 import com.mbayou.streamersonglist4k.api.QueueId
 import java.net.http.HttpClient
+import java.net.http.WebSocket
+import java.util.concurrent.CompletionException
+import org.mockito.Mockito
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class EventClientTest {
     private val mapper: ObjectMapper = ObjectMapper()
@@ -65,5 +70,44 @@ class EventClientTest {
 
         assertEquals("future_event", event.type)
         assertEquals(1, event.payload?.get("value")?.asInt())
+    }
+
+    @Test
+    fun `listener completes session lifecycle on close`() {
+        val lifecycle = EventSessionLifecycle()
+        val listener = Listener(
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+
+        listener.onClose(Mockito.mock(WebSocket::class.java), WebSocket.NORMAL_CLOSURE, "closed")
+
+        assertTrue(lifecycle.completion.isDone)
+        lifecycle.completion.join()
+    }
+
+    @Test
+    fun `listener fails session lifecycle when event parsing throws`() {
+        val lifecycle = EventSessionLifecycle()
+        val listener = Listener(
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener {
+                error("boom")
+            },
+            lifecycle = lifecycle,
+        )
+        val webSocket = Mockito.mock(WebSocket::class.java)
+
+        listener.onText(
+            webSocket,
+            """{"type":"future_event","data":{"value":1}}""",
+            true
+        )
+
+        assertTrue(lifecycle.completion.isCompletedExceptionally)
+        assertFailsWith<CompletionException> {
+            lifecycle.completion.join()
+        }
     }
 }

@@ -26,12 +26,13 @@ class EventClient(
         authentication: StreamerSonglistAuthentication? = null,
     ): CompletableFuture<EventSession> {
         val auth = authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection")
-        val webSocketListener = Listener(parser, listener)
+        val lifecycle = EventSessionLifecycle()
+        val webSocketListener = Listener(parser, listener, lifecycle)
         return httpClient
             .newWebSocketBuilder()
             .buildAsync(URI.create(configuration.eventsBaseUrl), webSocketListener)
             .thenApply { webSocket ->
-                val session = EventSession(webSocket, mapper)
+                val session = EventSession(webSocket, mapper, lifecycle.completion)
                 session.connect(auth.value)
                 channels.forEach { session.subscribe(it) }
                 session
@@ -46,30 +47,61 @@ class EventClient(
         return parser.parse(root)
     }
 
-    private class Listener(
-        private val parser: EventMessageParser,
-        private val eventListener: StreamerSonglistEventListener,
-    ) : WebSocket.Listener {
-        private val buffer = StringBuilder()
+}
 
-        override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*> {
-            buffer.append(data)
-            if (last) {
-                val message = buffer.toString()
-                buffer.clear()
+internal class Listener(
+    private val parser: EventMessageParser,
+    private val eventListener: StreamerSonglistEventListener,
+    private val lifecycle: EventSessionLifecycle,
+) : WebSocket.Listener {
+    private val buffer = StringBuilder()
+
+    override fun onText(webSocket: WebSocket, data: CharSequence, last: Boolean): CompletionStage<*> {
+        buffer.append(data)
+        if (last) {
+            val message = buffer.toString()
+            buffer.clear()
+            try {
                 parser.parse(message).forEach(eventListener::onEvent)
+            } catch (error: Throwable) {
+                lifecycle.fail(error)
+                webSocket.abort()
+                return CompletableFuture<Nothing?>().apply {
+                    completeExceptionally(error)
+                }
             }
-            webSocket.request(1)
-            return CompletableFuture.completedFuture(null)
         }
+        webSocket.request(1)
+        return CompletableFuture.completedFuture(null)
+    }
 
-        override fun onOpen(webSocket: WebSocket) {
-            webSocket.request(1)
-        }
+    override fun onOpen(webSocket: WebSocket) {
+        webSocket.request(1)
+    }
+
+    override fun onClose(webSocket: WebSocket, statusCode: Int, reason: String): CompletionStage<*> {
+        lifecycle.complete()
+        return CompletableFuture.completedFuture(null)
+    }
+
+    override fun onError(webSocket: WebSocket, error: Throwable) {
+        lifecycle.fail(error)
     }
 }
 
-private class EventMessageParser(private val mapper: ObjectMapper) {
+internal class EventSessionLifecycle {
+    val completion: CompletableFuture<Unit> = CompletableFuture()
+
+    fun complete() {
+        completion.complete(Unit)
+    }
+
+    fun fail(error: Throwable) {
+        completion.completeExceptionally(error)
+    }
+}
+
+internal class EventMessageParser(private val mapper: ObjectMapper) {
     fun parse(message: String): List<StreamerSonglistEventEnvelope> {
         return parse(mapper.readTree(message))
     }
@@ -116,6 +148,7 @@ private class EventMessageParser(private val mapper: ObjectMapper) {
 class EventSession(
     private val webSocket: WebSocket,
     private val mapper: ObjectMapper,
+    val completion: CompletableFuture<Unit>,
 ) {
     private var nextId: Int = 1
 

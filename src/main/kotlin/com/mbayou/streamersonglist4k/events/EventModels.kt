@@ -18,11 +18,17 @@ value class StreamerSonglistChannel @JsonCreator(mode = JsonCreator.Mode.DELEGAT
         fun queue(streamerId: StreamerId): StreamerSonglistChannel =
             StreamerSonglistChannel("streamer:${streamerId.value}-queue")
 
+        fun song(streamerId: StreamerId): StreamerSonglistChannel =
+            StreamerSonglistChannel("streamer:${streamerId.value}-song")
+
         fun playHistory(streamerId: StreamerId): StreamerSonglistChannel =
             StreamerSonglistChannel("streamer:${streamerId.value}-play_history")
 
         fun savedQueue(streamerId: StreamerId): StreamerSonglistChannel =
             StreamerSonglistChannel("streamer:${streamerId.value}-saved-queue")
+
+        fun admin(streamerId: StreamerId): StreamerSonglistChannel =
+            StreamerSonglistChannel("streamer-admin:${streamerId.value}")
 
         fun raw(value: String): StreamerSonglistChannel = StreamerSonglistChannel(value)
     }
