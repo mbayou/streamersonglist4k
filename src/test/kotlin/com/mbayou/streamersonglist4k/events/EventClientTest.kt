@@ -11,6 +11,7 @@ import java.net.http.HttpClient
 import java.net.http.WebSocket
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletableFuture
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -230,6 +231,26 @@ class EventClientTest {
         listener.onText(webSocket, "{}", true)
 
         Mockito.verify(webSocket).sendText("{}", true)
+    }
+
+    @Test
+    fun `anonymous connect omits token from connect payload`() {
+        val lifecycle = EventSessionLifecycle()
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+        val webSocket = mockWebSocket()
+        val session = protocol.attach(webSocket)
+        val payloadCaptor = ArgumentCaptor.forClass(String::class.java)
+
+        session.connect()
+
+        Mockito.verify(webSocket).sendText(payloadCaptor.capture(), Mockito.eq(true))
+        assertFalse(payloadCaptor.value.contains("\"token\""))
+        assertTrue(payloadCaptor.value.contains("\"connect\""))
     }
 
     private fun mockWebSocket(): WebSocket {

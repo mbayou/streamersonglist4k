@@ -28,7 +28,29 @@ class EventClient(
         listener: StreamerSonglistEventListener,
         authentication: StreamerSonglistAuthentication? = null,
     ): CompletableFuture<EventSession> {
-        val auth = authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection")
+        return connectInternal(
+            channels = channels,
+            listener = listener,
+            token = (authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection")).value,
+        )
+    }
+
+    fun connectAnonymous(
+        channels: Collection<StreamerSonglistChannel>,
+        listener: StreamerSonglistEventListener,
+    ): CompletableFuture<EventSession> {
+        return connectInternal(
+            channels = channels,
+            listener = listener,
+            token = null,
+        )
+    }
+
+    private fun connectInternal(
+        channels: Collection<StreamerSonglistChannel>,
+        listener: StreamerSonglistEventListener,
+        token: String?,
+    ): CompletableFuture<EventSession> {
         val lifecycle = EventSessionLifecycle()
         val protocol = EventSessionProtocol(mapper, parser, listener, lifecycle)
         val webSocketListener = Listener(protocol)
@@ -37,7 +59,7 @@ class EventClient(
             .buildAsync(URI.create(configuration.eventsBaseUrl), webSocketListener)
             .thenCompose { webSocket ->
                 val session = protocol.attach(webSocket)
-                session.connect(auth.value)
+                session.connect(token)
                     .thenCompose {
                         channels.fold(CompletableFuture.completedFuture(Unit)) { completion, channel ->
                             completion.thenCompose { session.subscribe(channel) }
@@ -118,13 +140,16 @@ internal class EventSessionProtocol(
         return EventSession(this, lifecycle.completion)
     }
 
-    fun connect(token: String): CompletableFuture<Unit> {
+    fun connect(token: String?): CompletableFuture<Unit> {
+        val commandPayload = linkedMapOf<String, Any>(
+            "name" to "streamersonglist4k",
+        )
+        if (!token.isNullOrBlank()) {
+            commandPayload["token"] = token
+        }
         return sendCommand(
             commandName = "connect",
-            commandPayload = mapOf(
-                "name" to "streamersonglist4k",
-                "token" to token,
-            ),
+            commandPayload = commandPayload,
         )
     }
 
@@ -310,7 +335,7 @@ class EventSession internal constructor(
     private val protocol: EventSessionProtocol,
     val completion: CompletableFuture<Unit>,
 ) {
-    fun connect(token: String): CompletableFuture<Unit> {
+    fun connect(token: String? = null): CompletableFuture<Unit> {
         return protocol.connect(token)
     }
 
