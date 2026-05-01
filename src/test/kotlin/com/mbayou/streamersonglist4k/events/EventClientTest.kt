@@ -10,11 +10,13 @@ import com.mbayou.streamersonglist4k.api.QueueId
 import java.net.http.HttpClient
 import java.net.http.WebSocket
 import java.util.concurrent.CompletionException
+import java.util.concurrent.CompletableFuture
 import org.mockito.Mockito
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class EventClientTest {
@@ -73,24 +75,66 @@ class EventClientTest {
     }
 
     @Test
-    fun `listener completes session lifecycle on close`() {
+    fun `parseMessage supports line-delimited event batches`() {
+        val message = """
+            {"type":"future_event","data":{"value":1}}
+            {"type":"future_event","data":{"value":2}}
+        """.trimIndent()
+
+        val events = client.parseMessage(message).map { assertIs<StreamerSonglistEvent.Unknown>(it.event) }
+
+        assertEquals(listOf(1, 2), events.map { it.payload?.get("value")?.asInt() })
+    }
+
+    @Test
+    fun `listener completes session lifecycle on local close`() {
         val lifecycle = EventSessionLifecycle()
-        val listener = Listener(
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
             parser = EventMessageParser(mapper),
             eventListener = StreamerSonglistEventListener { },
             lifecycle = lifecycle,
         )
+        val webSocket = mockWebSocket()
+        val listener = Listener(protocol)
 
-        listener.onClose(Mockito.mock(WebSocket::class.java), WebSocket.NORMAL_CLOSURE, "closed")
+        protocol.attach(webSocket).close(reason = "closed")
+        listener.onClose(webSocket, WebSocket.NORMAL_CLOSURE, "closed")
 
         assertTrue(lifecycle.completion.isDone)
         lifecycle.completion.join()
     }
 
     @Test
+    fun `listener fails session lifecycle on remote close`() {
+        val lifecycle = EventSessionLifecycle()
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+        val webSocket = mockWebSocket()
+        val listener = Listener(protocol)
+
+        protocol.attach(webSocket)
+        listener.onClose(webSocket, 3500, "permission denied")
+
+        assertTrue(lifecycle.completion.isCompletedExceptionally)
+        val error = assertFailsWith<CompletionException> {
+            lifecycle.completion.join()
+        }
+        val cause = assertIs<EventSessionClosedException>(error.cause)
+        assertEquals(3500, cause.statusCode)
+        assertEquals("permission denied", cause.closeReason)
+        assertFalse(cause.initiatedLocally)
+    }
+
+    @Test
     fun `listener fails session lifecycle when event parsing throws`() {
         val lifecycle = EventSessionLifecycle()
-        val listener = Listener(
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
             parser = EventMessageParser(mapper),
             eventListener = StreamerSonglistEventListener {
                 error("boom")
@@ -98,6 +142,9 @@ class EventClientTest {
             lifecycle = lifecycle,
         )
         val webSocket = Mockito.mock(WebSocket::class.java)
+        val listener = Listener(protocol)
+
+        protocol.attach(webSocket)
 
         listener.onText(
             webSocket,
@@ -109,5 +156,88 @@ class EventClientTest {
         assertFailsWith<CompletionException> {
             lifecycle.completion.join()
         }
+    }
+
+    @Test
+    fun `connect future completes only after command acknowledgement`() {
+        val lifecycle = EventSessionLifecycle()
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+        val webSocket = mockWebSocket()
+        val listener = Listener(protocol)
+        val session = protocol.attach(webSocket)
+
+        val connectFuture = session.connect("token")
+
+        assertFalse(connectFuture.isDone)
+
+        listener.onText(
+            webSocket,
+            """{"id":1,"connect":{"client":"abc","ping":25,"pong":true}}""",
+            true
+        )
+
+        assertTrue(connectFuture.isDone)
+        connectFuture.join()
+    }
+
+    @Test
+    fun `subscribe future fails with command error reply`() {
+        val lifecycle = EventSessionLifecycle()
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+        val webSocket = mockWebSocket()
+        val listener = Listener(protocol)
+        val session = protocol.attach(webSocket)
+
+        val subscribeFuture = session.subscribe(StreamerSonglistChannel.raw("streamer:7-queue"))
+
+        listener.onText(
+            webSocket,
+            """{"id":1,"error":{"code":103,"message":"permission denied","temporary":false}}""",
+            true
+        )
+
+        val error = assertFailsWith<CompletionException> {
+            subscribeFuture.join()
+        }
+        val cause = assertIs<EventSessionCommandException>(error.cause)
+        assertEquals("subscribe", cause.commandName)
+        assertEquals(103, cause.code)
+    }
+
+    @Test
+    fun `listener replies to server ping frames`() {
+        val lifecycle = EventSessionLifecycle()
+        val protocol = EventSessionProtocol(
+            mapper = mapper,
+            parser = EventMessageParser(mapper),
+            eventListener = StreamerSonglistEventListener { },
+            lifecycle = lifecycle,
+        )
+        val webSocket = mockWebSocket()
+        val listener = Listener(protocol)
+
+        protocol.attach(webSocket)
+        listener.onText(webSocket, "{}", true)
+
+        Mockito.verify(webSocket).sendText("{}", true)
+    }
+
+    private fun mockWebSocket(): WebSocket {
+        val webSocket = Mockito.mock(WebSocket::class.java)
+        Mockito.`when`(webSocket.sendText(Mockito.anyString(), Mockito.eq(true)))
+            .thenReturn(CompletableFuture.completedFuture(webSocket))
+        Mockito.`when`(webSocket.sendClose(Mockito.anyInt(), Mockito.anyString()))
+            .thenReturn(CompletableFuture.completedFuture(webSocket))
+        return webSocket
     }
 }

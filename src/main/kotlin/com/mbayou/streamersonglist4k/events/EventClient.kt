@@ -9,8 +9,11 @@ import com.mbayou.streamersonglist4k.queue.QueueDetails
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.WebSocket
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 class EventClient(
     private val httpClient: HttpClient,
@@ -27,15 +30,25 @@ class EventClient(
     ): CompletableFuture<EventSession> {
         val auth = authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection")
         val lifecycle = EventSessionLifecycle()
-        val webSocketListener = Listener(parser, listener, lifecycle)
+        val protocol = EventSessionProtocol(mapper, parser, listener, lifecycle)
+        val webSocketListener = Listener(protocol)
         return httpClient
             .newWebSocketBuilder()
             .buildAsync(URI.create(configuration.eventsBaseUrl), webSocketListener)
-            .thenApply { webSocket ->
-                val session = EventSession(webSocket, mapper, lifecycle.completion)
+            .thenCompose { webSocket ->
+                val session = protocol.attach(webSocket)
                 session.connect(auth.value)
-                channels.forEach { session.subscribe(it) }
-                session
+                    .thenCompose {
+                        channels.fold(CompletableFuture.completedFuture(Unit)) { completion, channel ->
+                            completion.thenCompose { session.subscribe(channel) }
+                        }
+                    }
+                    .thenApply { session }
+                    .whenComplete { _, error ->
+                        if (error != null) {
+                            session.abort()
+                        }
+                    }
             }
     }
 
@@ -50,9 +63,7 @@ class EventClient(
 }
 
 internal class Listener(
-    private val parser: EventMessageParser,
-    private val eventListener: StreamerSonglistEventListener,
-    private val lifecycle: EventSessionLifecycle,
+    private val protocol: EventSessionProtocol,
 ) : WebSocket.Listener {
     private val buffer = StringBuilder()
 
@@ -62,9 +73,9 @@ internal class Listener(
             val message = buffer.toString()
             buffer.clear()
             try {
-                parser.parse(message).forEach(eventListener::onEvent)
+                protocol.handleIncomingMessage(message)
             } catch (error: Throwable) {
-                lifecycle.fail(error)
+                protocol.handleError(error)
                 webSocket.abort()
                 return CompletableFuture<Nothing?>().apply {
                     completeExceptionally(error)
@@ -80,12 +91,159 @@ internal class Listener(
     }
 
     override fun onClose(webSocket: WebSocket, statusCode: Int, reason: String): CompletionStage<*> {
-        lifecycle.complete()
+        protocol.handleClose(statusCode, reason)
         return CompletableFuture.completedFuture(null)
     }
 
     override fun onError(webSocket: WebSocket, error: Throwable) {
+        protocol.handleError(error)
+    }
+}
+
+internal class EventSessionProtocol(
+    private val mapper: ObjectMapper,
+    private val parser: EventMessageParser,
+    private val eventListener: StreamerSonglistEventListener,
+    private val lifecycle: EventSessionLifecycle,
+) {
+    private val nextId = AtomicInteger(1)
+    private val pendingCommands = ConcurrentHashMap<Int, PendingCommand>()
+    private val closeRequested = AtomicBoolean(false)
+
+    @Volatile
+    private var webSocket: WebSocket? = null
+
+    fun attach(webSocket: WebSocket): EventSession {
+        this.webSocket = webSocket
+        return EventSession(this, lifecycle.completion)
+    }
+
+    fun connect(token: String): CompletableFuture<Unit> {
+        return sendCommand(
+            commandName = "connect",
+            commandPayload = mapOf(
+                "name" to "streamersonglist4k",
+                "token" to token,
+            ),
+        )
+    }
+
+    fun subscribe(channel: StreamerSonglistChannel): CompletableFuture<Unit> {
+        return sendCommand(
+            commandName = "subscribe",
+            commandPayload = mapOf("channel" to channel.value),
+        )
+    }
+
+    fun close(statusCode: Int, reason: String): CompletableFuture<WebSocket> {
+        closeRequested.set(true)
+        return requireWebSocket().sendClose(statusCode, reason)
+    }
+
+    fun abort() {
+        closeRequested.set(true)
+        webSocket?.abort()
+    }
+
+    fun handleIncomingMessage(message: String) {
+        decodeFrames(message).forEach(::handleFrame)
+    }
+
+    fun handleClose(statusCode: Int, reason: String) {
+        val closeException = EventSessionClosedException(
+            statusCode = statusCode,
+            closeReason = reason,
+            initiatedLocally = closeRequested.get(),
+        )
+        failPendingCommands(closeException)
+        if (closeRequested.get()) {
+            lifecycle.complete()
+        } else {
+            lifecycle.fail(closeException)
+        }
+    }
+
+    fun handleError(error: Throwable) {
+        failPendingCommands(error)
         lifecycle.fail(error)
+    }
+
+    private fun handleFrame(frame: JsonNode) {
+        if (frame.isObject && frame.size() == 0) {
+            requireWebSocket().sendText("{}", true)
+            return
+        }
+
+        val replyId = frame.get("id")?.asInt(0) ?: 0
+        if (replyId > 0) {
+            handleReply(frame, replyId)
+            return
+        }
+
+        parser.parse(frame).forEach(eventListener::onEvent)
+    }
+
+    private fun handleReply(frame: JsonNode, replyId: Int) {
+        val pendingCommand = pendingCommands.remove(replyId) ?: return
+        val errorNode = frame.get("error")
+        if (errorNode != null && !errorNode.isNull) {
+            val exception = EventSessionCommandException(
+                commandName = pendingCommand.commandName,
+                commandId = replyId,
+                code = errorNode.get("code")?.asInt(),
+                serverMessage = errorNode.get("message")?.asText(),
+                temporary = errorNode.get("temporary")?.asBoolean(),
+                rawReply = frame.toString(),
+            )
+            pendingCommand.completion.completeExceptionally(exception)
+            lifecycle.fail(exception)
+            return
+        }
+        pendingCommand.completion.complete(Unit)
+    }
+
+    private fun sendCommand(
+        commandName: String,
+        commandPayload: Map<String, Any>,
+    ): CompletableFuture<Unit> {
+        val replyId = nextId.getAndIncrement()
+        val replyFuture = CompletableFuture<Unit>()
+        pendingCommands[replyId] = PendingCommand(commandName, replyFuture)
+
+        requireWebSocket()
+            .sendText(
+                mapper.writeValueAsString(
+                    mapOf(
+                        "id" to replyId,
+                        commandName to commandPayload,
+                    )
+                ),
+                true,
+            )
+            .whenComplete { _, error ->
+                if (error != null) {
+                    pendingCommands.remove(replyId)
+                    replyFuture.completeExceptionally(error)
+                    lifecycle.fail(error)
+                }
+            }
+
+        return replyFuture
+    }
+
+    private fun decodeFrames(message: String): List<JsonNode> {
+        return decodeJsonFrames(mapper, message)
+    }
+
+    private fun failPendingCommands(error: Throwable) {
+        pendingCommands.values.forEach { pending ->
+            pending.completion.completeExceptionally(error)
+        }
+        pendingCommands.clear()
+    }
+
+    private fun requireWebSocket(): WebSocket {
+        return requireNotNull(webSocket) { "Event session is not attached to a WebSocket yet" }
     }
 }
 
@@ -103,7 +261,10 @@ internal class EventSessionLifecycle {
 
 internal class EventMessageParser(private val mapper: ObjectMapper) {
     fun parse(message: String): List<StreamerSonglistEventEnvelope> {
-        return parse(mapper.readTree(message))
+        return decodeJsonFrames(mapper, message)
+            .asSequence()
+            .flatMap { parse(it).asSequence() }
+            .toList()
     }
 
     fun parse(root: JsonNode): List<StreamerSonglistEventEnvelope> {
@@ -145,39 +306,69 @@ internal class EventMessageParser(private val mapper: ObjectMapper) {
     }
 }
 
-class EventSession(
-    private val webSocket: WebSocket,
-    private val mapper: ObjectMapper,
+class EventSession internal constructor(
+    private val protocol: EventSessionProtocol,
     val completion: CompletableFuture<Unit>,
 ) {
-    private var nextId: Int = 1
-
-    fun connect(token: String): CompletableFuture<WebSocket> {
-        return send(
-            mapOf(
-                "id" to nextId++,
-                "connect" to mapOf(
-                    "name" to "streamersonglist4k",
-                    "token" to token,
-                ),
-            )
-        )
+    fun connect(token: String): CompletableFuture<Unit> {
+        return protocol.connect(token)
     }
 
-    fun subscribe(channel: StreamerSonglistChannel): CompletableFuture<WebSocket> {
-        return send(
-            mapOf(
-                "id" to nextId++,
-                "subscribe" to mapOf("channel" to channel.value),
-            )
-        )
+    fun subscribe(channel: StreamerSonglistChannel): CompletableFuture<Unit> {
+        return protocol.subscribe(channel)
     }
 
     fun close(statusCode: Int = WebSocket.NORMAL_CLOSURE, reason: String = "closed"): CompletableFuture<WebSocket> {
-        return webSocket.sendClose(statusCode, reason)
+        return protocol.close(statusCode, reason)
     }
 
-    private fun send(payload: Map<String, Any>): CompletableFuture<WebSocket> {
-        return webSocket.sendText(mapper.writeValueAsString(payload), true)
+    internal fun abort() {
+        protocol.abort()
     }
+}
+
+internal data class PendingCommand(
+    val commandName: String,
+    val completion: CompletableFuture<Unit>,
+)
+
+class EventSessionCommandException(
+    val commandName: String,
+    val commandId: Int,
+    val code: Int?,
+    val serverMessage: String?,
+    val temporary: Boolean?,
+    val rawReply: String,
+) : RuntimeException(
+    buildString {
+        append("StreamerSonglist event command ")
+        append(commandName)
+        append(" (id=")
+        append(commandId)
+        append(") failed")
+        if (code != null) {
+            append(" with code ")
+            append(code)
+        }
+        if (!serverMessage.isNullOrBlank()) {
+            append(": ")
+            append(serverMessage)
+        }
+    }
+)
+
+class EventSessionClosedException(
+    val statusCode: Int,
+    val closeReason: String,
+    val initiatedLocally: Boolean,
+) : RuntimeException(
+    if (initiatedLocally) {
+        "StreamerSonglist event session closed locally (code=$statusCode, reason=$closeReason)"
+    } else {
+        "StreamerSonglist event session closed by server (code=$statusCode, reason=$closeReason)"
+    }
+)
+
+internal fun decodeJsonFrames(mapper: ObjectMapper, message: String): List<JsonNode> {
+    return mapper.readerFor(JsonNode::class.java).readValues<JsonNode>(message).readAll()
 }
