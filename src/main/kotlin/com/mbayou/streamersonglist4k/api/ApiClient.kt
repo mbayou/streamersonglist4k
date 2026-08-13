@@ -78,6 +78,9 @@ abstract class ApiClient(
             val auth = authentication
             if (auth != null) {
                 requestBuilder.header("Authorization", auth.headerValue)
+                if (auth is StreamerSonglistAuthentication.OAuthAccessToken) {
+                    requestBuilder.header("Client-Id", configuration.clientId)
+                }
             }
 
             if ("GET".equals(method, ignoreCase = true)) {

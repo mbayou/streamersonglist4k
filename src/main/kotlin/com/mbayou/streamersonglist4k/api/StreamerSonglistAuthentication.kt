@@ -11,4 +11,8 @@ sealed interface StreamerSonglistAuthentication {
     data class StreamerAccessToken(override val value: String) : StreamerSonglistAuthentication {
         override val headerValue: String = "Streamer $value"
     }
+
+    data class UserAccessToken(override val value: String) : StreamerSonglistAuthentication {
+        override val headerValue: String = "User $value"
+    }
 }

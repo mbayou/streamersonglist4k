@@ -20,9 +20,11 @@ class AuthorizationClient(
 ) {
     fun authorizationUrl(
         scopes: Collection<StreamerSonglistScope>,
-        state: String? = null,
+        state: String,
         nonce: String? = null,
+        pkceChallenge: OAuthPkceChallenge? = null,
     ): String {
+        require(state.isNotBlank()) { "OAuth state must not be blank" }
         val params = linkedMapOf<String, String?>(
             "client_id" to configuration.clientId,
             "redirect_uri" to configuration.redirectUri,
@@ -30,6 +32,8 @@ class AuthorizationClient(
             "scope" to scopes.joinToString(" ") { it.value },
             "state" to state,
             "nonce" to nonce,
+            "code_challenge" to pkceChallenge?.value,
+            "code_challenge_method" to pkceChallenge?.method?.apiValue,
         )
         val query = StringJoiner("&")
         params.filterValues { it != null }.forEach { (key, value) ->
@@ -38,7 +42,7 @@ class AuthorizationClient(
         return "${configuration.oAuthBaseUrl}/auth?$query"
     }
 
-    fun exchangeAuthorizationCode(code: String): OAuthTokenResponse {
+    fun exchangeAuthorizationCode(code: String, codeVerifier: String? = null): OAuthTokenResponse {
         return token(
             mapOf(
                 "client_id" to configuration.clientId,
@@ -46,7 +50,8 @@ class AuthorizationClient(
                 "redirect_uri" to configuration.redirectUri,
                 "grant_type" to "authorization_code",
                 "code" to code,
-            )
+                "code_verifier" to codeVerifier,
+            ).filterValues { it != null }.mapValues { requireNotNull(it.value) }
         )
     }
 

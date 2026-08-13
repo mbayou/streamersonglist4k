@@ -15,6 +15,21 @@ data class QueueResponseBody(
     val schema: String? = null,
     val items: List<QueueDetails>?,
     val total: Long,
+    val playing: NowPlayingDetails? = null,
+)
+
+data class NowPlayingDetails(
+    @JsonProperty("\$schema")
+    val schema: String? = null,
+    val id: QueueId,
+    val createdAt: Instant,
+    val songId: SongId?,
+    val nonlistSong: String?,
+    val note: String?,
+    val streamerId: StreamerId,
+    val nowPlayingStartedAt: Instant?,
+    val song: QueueSong,
+    val requests: List<Request>?,
 )
 
 data class QueueDetails(
@@ -50,7 +65,7 @@ data class CreateQueueRequest(
     val requests: List<QueueRequestInput>? = null,
     val note: String? = null,
     val insertMethod: QueueInsertMethod? = null,
-    val position: Int? = null,
+    val position: CreateQueuePosition? = null,
 )
 
 data class UpdateQueueRequest(
@@ -88,4 +103,18 @@ enum class QueueInsertMethod(override val apiValue: String) : ApiEnum {
     POSITION("position"),
     AMOUNT("amount"),
     END("end"),
+}
+
+sealed interface CreateQueuePosition : ApiEnum {
+    data object Playing : CreateQueuePosition {
+        override val apiValue: String = "playing"
+    }
+
+    data class Upcoming(val value: Int) : CreateQueuePosition {
+        init {
+            require(value >= 1) { "Upcoming queue position must be at least 1" }
+        }
+
+        override val apiValue: String = value.toString()
+    }
 }

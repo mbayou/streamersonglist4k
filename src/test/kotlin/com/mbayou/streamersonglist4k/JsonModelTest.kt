@@ -9,8 +9,10 @@ import com.mbayou.streamersonglist4k.api.QueueId
 import com.mbayou.streamersonglist4k.api.SongId
 import com.mbayou.streamersonglist4k.api.StreamerId
 import com.mbayou.streamersonglist4k.queue.CreateQueueRequest
+import com.mbayou.streamersonglist4k.queue.CreateQueuePosition
 import com.mbayou.streamersonglist4k.queue.QueueDetails
 import com.mbayou.streamersonglist4k.queue.QueueInsertMethod
+import com.mbayou.streamersonglist4k.queue.QueueResponseBody
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -66,6 +68,7 @@ class JsonModelTest {
             streamerId = StreamerId(7),
             songId = SongId(123),
             insertMethod = QueueInsertMethod.END,
+            position = CreateQueuePosition.Upcoming(2),
         )
 
         val json = mapper.writeValueAsString(request)
@@ -74,5 +77,41 @@ class JsonModelTest {
         assertEquals(7, node.get("streamerId").asInt())
         assertEquals(123, node.get("songId").asInt())
         assertEquals("end", node.get("insertMethod").asText())
+        assertEquals("2", node.get("position").asText())
+    }
+
+    @Test
+    fun `queue response keeps now playing separate from upcoming items`() {
+        val json = """
+            {
+              "items": [],
+              "total": 0,
+              "playing": {
+                "id": 44,
+                "createdAt": "2026-08-13T10:15:30Z",
+                "songId": 123,
+                "nonlistSong": null,
+                "note": null,
+                "streamerId": 7,
+                "nowPlayingStartedAt": "2026-08-13T10:16:00Z",
+                "song": {
+                  "title": "Playing Song",
+                  "artist": "Artist",
+                  "lastPlayed": null,
+                  "lastPlayedFrom": "",
+                  "timesPlayed": 2,
+                  "comment": null,
+                  "capo": null,
+                  "attributes": []
+                },
+                "requests": null
+              }
+            }
+        """.trimIndent()
+
+        val response = mapper.readValue(json, QueueResponseBody::class.java)
+
+        assertEquals("Playing Song", response.playing?.song?.title)
+        assertEquals(0, response.items?.size)
     }
 }

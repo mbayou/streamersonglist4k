@@ -2,6 +2,7 @@ package com.mbayou.streamersonglist4k
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mbayou.streamersonglist4k.authorization.AuthorizationClient
+import com.mbayou.streamersonglist4k.authorization.OAuthPkceChallenge
 import com.mbayou.streamersonglist4k.authorization.OAuthTokenResponse
 import com.mbayou.streamersonglist4k.authorization.ScopePermission
 import com.mbayou.streamersonglist4k.authorization.ScopeResource
@@ -13,6 +14,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpHeaders
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
@@ -29,7 +31,7 @@ class AuthorizationClientTest {
     private val mapper = ObjectMapper().findAndRegisterModules()
 
     @Test
-    fun `default oauth configuration targets the current staging issuer`() {
+    fun `default oauth configuration targets the production issuer`() {
         val configuration = StreamerSonglistConfiguration.builder()
             .clientId("client-id")
             .clientSecret("client-secret")
@@ -38,10 +40,11 @@ class AuthorizationClientTest {
         val client = AuthorizationClient(HttpClient.newHttpClient(), mapper, configuration)
 
         val url = client.authorizationUrl(
-            scopes = listOf(StreamerSonglistScope.resource(ScopeResource.STREAMER_QUEUE, ScopePermission.READ))
+            scopes = listOf(StreamerSonglistScope.resource(ScopeResource.STREAMER_QUEUE, ScopePermission.READ)),
+            state = "state",
         )
 
-        assertContains(url, "https://id.staging.streamersonglist.com/oauth2/auth?")
+        assertContains(url, "https://id.stsl.io/oauth2/auth?")
     }
 
     @Test
@@ -61,14 +64,17 @@ class AuthorizationClientTest {
             ),
             state = "csrf state",
             nonce = "nonce value",
+            pkceChallenge = OAuthPkceChallenge("challenge-value"),
         )
 
         assertContains(url, "https://id.staging.streamersonglist.com/oauth2/auth?")
         assertContains(url, "client_id=client-id")
         assertContains(url, "redirect_uri=https%3A%2F%2Fapp.example%2Fcallback")
-        assertContains(url, "scope=streamer.queue.r+streamer.song.*")
+        assertContains(url, "scope=streamer.queue.read+streamer.song.*")
         assertContains(url, "state=csrf+state")
         assertContains(url, "nonce=nonce+value")
+        assertContains(url, "code_challenge=challenge-value")
+        assertContains(url, "code_challenge_method=S256")
     }
 
     @Test
@@ -88,17 +94,19 @@ class AuthorizationClientTest {
             .redirectUri("https://app.example/callback")
             .staging()
             .build()
+        val httpClient = FakeHttpClient(statusCode = 200, body = rawBody)
         val client = AuthorizationClient(
-            FakeHttpClient(statusCode = 200, body = rawBody),
+            httpClient,
             mapper,
             configuration,
         )
 
-        val token = client.exchangeAuthorizationCode("code-123")
+        val token = client.exchangeAuthorizationCode("code-123", codeVerifier = "verifier-value")
 
         assertEquals(rawBody, token.rawResponseBody)
         assertNull(token.refreshToken)
         assertContains(token.maskedDebugResponseBody(), "\"access_token\": \"acce...1234 (len=23)\"")
+        assertContains(capturedRequestBody(httpClient), "code_verifier=verifier-value")
     }
 
     @Test
@@ -113,10 +121,13 @@ class AuthorizationClientTest {
     }
 }
 
-private class FakeHttpClient(
+class FakeHttpClient(
     private val statusCode: Int,
     private val body: String,
 ) : HttpClient() {
+    var lastRequest: HttpRequest? = null
+        private set
+
     override fun cookieHandler(): Optional<CookieHandler> = Optional.empty()
 
     override fun connectTimeout(): Optional<Duration> = Optional.empty()
@@ -139,6 +150,7 @@ private class FakeHttpClient(
         request: HttpRequest,
         responseBodyHandler: HttpResponse.BodyHandler<T>,
     ): HttpResponse<T> {
+        lastRequest = request
         @Suppress("UNCHECKED_CAST")
         return FakeHttpResponse(statusCode, body, request) as HttpResponse<T>
     }
@@ -156,6 +168,40 @@ private class FakeHttpClient(
         pushPromiseHandler: HttpResponse.PushPromiseHandler<T>?,
     ): CompletableFuture<HttpResponse<T>> {
         return CompletableFuture.completedFuture(send(request, responseBodyHandler))
+    }
+}
+
+private fun capturedRequestBody(httpClient: FakeHttpClient): String {
+    return httpClient.lastRequest?.bodyPublisher()?.orElseThrow()?.let { publisher ->
+        val subscriber = BodySubscriber()
+        publisher.subscribe(subscriber)
+        subscriber.body.join()
+    } ?: error("Request body was not captured")
+}
+
+private class BodySubscriber : java.util.concurrent.Flow.Subscriber<java.nio.ByteBuffer> {
+    private val chunks = mutableListOf<java.nio.ByteBuffer>()
+    private val completion = CompletableFuture<String>()
+    val body: CompletableFuture<String> = completion
+
+    override fun onSubscribe(subscription: java.util.concurrent.Flow.Subscription) {
+        subscription.request(Long.MAX_VALUE)
+    }
+
+    override fun onNext(item: java.nio.ByteBuffer) {
+        chunks += item
+    }
+
+    override fun onError(throwable: Throwable) {
+        completion.completeExceptionally(throwable)
+    }
+
+    override fun onComplete() {
+        val bytes = chunks.flatMap { buffer ->
+            val copy = buffer.slice()
+            List(copy.remaining()) { copy.get() }
+        }.toByteArray()
+        completion.complete(bytes.toString(StandardCharsets.UTF_8))
     }
 }
 

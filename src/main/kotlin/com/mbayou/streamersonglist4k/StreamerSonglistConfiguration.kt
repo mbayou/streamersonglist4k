@@ -17,9 +17,8 @@ data class StreamerSonglistConfiguration(
         private var clientId: String? = null
         private var clientSecret: String? = null
         private var redirectUri: String? = null
-        private var apiBaseUrl: String = "https://api.streamersonglist.com"
-        // Temporary until StreamerSonglist publishes the non-staging issuer details.
-        private var oAuthBaseUrl: String = "https://id.staging.streamersonglist.com/oauth2"
+        private var apiBaseUrl: String = "https://api.stsl.io"
+        private var oAuthBaseUrl: String = "https://id.stsl.io/oauth2"
         private var eventsBaseUrl: String = "wss://events.streamersonglist.com/connection/websocket"
 
         fun clientId(clientId: String) = apply { this.clientId = clientId }
