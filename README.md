@@ -46,7 +46,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.mbayou:streamersonglist4k:v0.3.0")
+    implementation("com.github.mbayou:streamersonglist4k:0.3.0")
 }
 ```
 
