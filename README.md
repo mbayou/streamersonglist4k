@@ -22,10 +22,12 @@ StreamerSonglist API.
 
 The current release targets the documented StreamerSonglist V2 API:
 
-- https://dev.stsl.io/api-reference
-- https://api.stsl.io/openapi.json
+- https://dev.streamersonglist.com/api-reference
+- https://api.streamersonglist.com/openapi.json
 
-Implemented in `0.3.0`:
+Version `0.3.1` uses the canonical production API and OAuth hosts. Starting OAuth on an alias can lose the provider login cookie when it returns to the canonical host.
+
+Implemented in `0.3.1`:
 
 - OAuth authorization URL, authorization-code exchange, client credentials, and refresh token helpers.
 - Streamer access token and OAuth bearer token authentication.
@@ -46,7 +48,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.mbayou:streamersonglist4k:0.3.0")
+    implementation("com.github.mbayou:streamersonglist4k:0.3.1")
 }
 ```
 

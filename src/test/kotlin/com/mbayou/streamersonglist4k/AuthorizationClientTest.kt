@@ -44,7 +44,8 @@ class AuthorizationClientTest {
             state = "state",
         )
 
-        assertContains(url, "https://id.stsl.io/oauth2/auth?")
+        assertContains(url, "https://id.streamersonglist.com/oauth2/auth?")
+        assertEquals("https://api.streamersonglist.com", configuration.apiBaseUrl)
     }
 
     @Test
@@ -107,6 +108,25 @@ class AuthorizationClientTest {
         assertNull(token.refreshToken)
         assertContains(token.maskedDebugResponseBody(), "\"access_token\": \"acce...1234 (len=23)\"")
         assertContains(capturedRequestBody(httpClient), "code_verifier=verifier-value")
+    }
+
+    @Test
+    fun `default token exchange uses the same canonical issuer as browser authorization`() {
+        val configuration = StreamerSonglistConfiguration.builder()
+            .clientId("client-id")
+            .clientSecret("client-secret")
+            .redirectUri("https://app.example/callback")
+            .build()
+        val httpClient = FakeHttpClient(
+            statusCode = 200,
+            body = """{"access_token":"access","refresh_token":"refresh","expires_in":3600,"scope":"offline_access","token_type":"Bearer"}""",
+        )
+        val client = AuthorizationClient(httpClient, mapper, configuration)
+
+        client.exchangeAuthorizationCode("test-code", codeVerifier = "test-verifier")
+        assertEquals(URI.create("https://id.streamersonglist.com/oauth2/token"), httpClient.lastRequest?.uri())
+        client.refreshToken("refresh")
+        assertEquals(URI.create("https://id.streamersonglist.com/oauth2/token"), httpClient.lastRequest?.uri())
     }
 
     @Test
