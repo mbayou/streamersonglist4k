@@ -72,6 +72,7 @@ abstract class ApiClient(
 
         private fun sendRequest(): HttpResponse<String> {
             val requestBuilder = HttpRequest.newBuilder()
+                .timeout(configuration.requestTimeout)
                 .uri(URI.create(buildUrl(configuration.apiBaseUrl + path, queryParams)))
                 .header("Accept", "application/json")
 

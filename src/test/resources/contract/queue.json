@@ -1,0 +1,63 @@
+{
+  "items": [
+    {
+      "createdAt": "2026-11-02T12:00:00Z",
+      "id": 42,
+      "nonlistArtist": null,
+      "nonlistSong": null,
+      "nonlistTitle": null,
+      "note": null,
+      "position": 1,
+      "priority": "",
+      "requests": [],
+      "song": {
+        "albumArt": null,
+        "artist": "Artist",
+        "attributes": null,
+        "capo": null,
+        "comment": null,
+        "duration": null,
+        "hasChords": false,
+        "hasLyrics": false,
+        "hasTabs": false,
+        "isNew": false,
+        "lastPlayed": null,
+        "lastPlayedFrom": "",
+        "timesPlayed": 0,
+        "title": "Upcoming song"
+      },
+      "songId": null,
+      "streamerId": 7
+    }
+  ],
+  "total": 1,
+  "playing": {
+    "createdAt": "2026-11-02T12:00:00Z",
+    "id": 41,
+    "nonlistArtist": null,
+    "nonlistSong": null,
+    "nonlistTitle": null,
+    "note": null,
+    "nowPlayingStartedAt": null,
+    "priority": "",
+    "requests": null,
+    "song": {
+      "albumArt": null,
+      "artist": "",
+      "attributes": null,
+      "capo": null,
+      "comment": null,
+      "duration": null,
+      "hasChords": false,
+      "hasLyrics": false,
+      "hasTabs": false,
+      "isNew": false,
+      "lastPlayed": null,
+      "lastPlayedFrom": "",
+      "timesPlayed": 0,
+      "title": "Playing song"
+    },
+    "songId": null,
+    "streamerId": 7
+  }
+}

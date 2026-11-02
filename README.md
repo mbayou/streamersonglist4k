@@ -25,9 +25,9 @@ The current release targets the documented StreamerSonglist V2 API:
 - https://dev.streamersonglist.com/api-reference
 - https://api.streamersonglist.com/openapi.json
 
-Version `0.3.1` uses the canonical production API and OAuth hosts. Starting OAuth on an alias can lose the provider login cookie when it returns to the canonical host.
+Version `0.4.0` uses the canonical production API and OAuth hosts. Starting OAuth on an alias can lose the provider login cookie when it returns to the canonical host.
 
-Implemented in `0.3.1`:
+Implemented in `0.4.0`:
 
 - OAuth authorization URL, authorization-code exchange, client credentials, and refresh token helpers.
 - Streamer access token and OAuth bearer token authentication.
@@ -48,7 +48,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.mbayou:streamersonglist4k:0.3.1")
+    implementation("com.github.mbayou:streamersonglist4k:0.4.0")
 }
 ```
 
@@ -235,3 +235,21 @@ MIT. See [LICENSE](LICENSE).
 reactive, entertaining, and community-aware live experiences across chat, games, overlays, integrations, and automation.
 
 `streamersonglist4k` is one of the open source building blocks NovaSquare maintains for the creator-tech ecosystem.
+
+## Upgrading to 0.4.0
+
+Response models follow the November 2, 2026 OpenAPI contract. `StreamerDetails`
+removes obsolete profile fields (including `createdAt`) and exposes current
+settings with typed configuration models. Queue deletion returns `deleted` or
+`queueDeleted` rather than `message`. `QueueAdd.queue` and `QueueRemove.queueId`
+are nullable for resource invalidation events; refetch the queue when absent.
+
+Public event channels remain anonymous. OAuth event connections authenticate the
+WebSocket handshake with `Authorization` and `Client-Id`; opaque OAuth access
+tokens are not Centrifugo JWTs. Saved-queue channels use `saved_queue`.
+
+HTTP and event command deadlines are configurable with `requestTimeout` and
+`eventCommandTimeout` on the configuration builder. OAuth failures expose a
+separate `OAuthTokenException.code`; exception messages never include raw
+response bodies. Preserve refresh tokens on transient failures and persist each
+rotated token before further exchanges.

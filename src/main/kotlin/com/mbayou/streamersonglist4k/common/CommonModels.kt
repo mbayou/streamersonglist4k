@@ -12,6 +12,7 @@ data class Request(
     val source: String,
     val createdAt: String,
     val user: RequestUser? = null,
+    val mine: Boolean? = null,
 )
 
 data class RequestUser(

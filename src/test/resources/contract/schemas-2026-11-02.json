@@ -1,0 +1,1608 @@
+{
+  "AdminPermissions": {
+    "additionalProperties": false,
+    "properties": {
+      "attribute": {
+        "type": "string"
+      },
+      "command": {
+        "type": "string"
+      },
+      "history": {
+        "type": "string"
+      },
+      "overlay": {
+        "type": "string"
+      },
+      "premiumContent": {
+        "type": "string"
+      },
+      "queue": {
+        "type": "string"
+      },
+      "settings": {
+        "type": "string"
+      },
+      "song": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "AdminSyncConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "twitch": {
+        "$ref": "#/components/schemas/AdminSyncPlatformConfig"
+      }
+    },
+    "type": "object"
+  },
+  "AdminSyncPlatformConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "defaultPermissions": {
+        "$ref": "#/components/schemas/AdminPermissions"
+      },
+      "enabled": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "enabled"
+    ],
+    "type": "object"
+  },
+  "ClearQueueResponseBody": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/ClearQueueResponseBody.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "deleted": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "deleted"
+    ],
+    "type": "object"
+  },
+  "CustomThemeColors": {
+    "additionalProperties": false,
+    "properties": {
+      "accent": {
+        "type": "string"
+      },
+      "background": {
+        "type": "string"
+      },
+      "dark": {
+        "$ref": "#/components/schemas/CustomThemeDarkColors"
+      },
+      "foreground": {
+        "type": "string"
+      },
+      "primary": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "primary",
+      "accent"
+    ],
+    "type": "object"
+  },
+  "CustomThemeDarkColors": {
+    "additionalProperties": false,
+    "properties": {
+      "accent": {
+        "type": "string"
+      },
+      "background": {
+        "type": "string"
+      },
+      "foreground": {
+        "type": "string"
+      },
+      "primary": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "DeleteQueueRequestResponseBody": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/DeleteQueueRequestResponseBody.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "queue": {
+        "$ref": "#/components/schemas/QueueDetails"
+      },
+      "queueDeleted": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "queueDeleted"
+    ],
+    "type": "object"
+  },
+  "EventChatSinkConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "enabled": {
+        "type": "boolean"
+      },
+      "platforms": {
+        "additionalProperties": {
+          "type": "boolean"
+        },
+        "type": "object"
+      },
+      "template": {
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "EventConfigEntry": {
+    "additionalProperties": false,
+    "properties": {
+      "chat": {
+        "$ref": "#/components/schemas/EventChatSinkConfig"
+      }
+    },
+    "type": "object"
+  },
+  "FeatureConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "collabSessions": {
+        "type": "boolean"
+      },
+      "duration": {
+        "type": "boolean"
+      },
+      "globalSongSearch": {
+        "type": "boolean"
+      },
+      "premiumContent": {
+        "type": "boolean"
+      },
+      "savedRequests": {
+        "type": "boolean"
+      },
+      "songsToLearn": {
+        "type": "boolean"
+      },
+      "tokens": {
+        "type": "boolean"
+      }
+    },
+    "type": "object"
+  },
+  "HistoryDetails": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/HistoryDetails.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "nonlistArtist": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistSong": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistTitle": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "note": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "playedAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "requests": {
+        "items": {
+          "$ref": "#/components/schemas/Request"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "song": {
+        "$ref": "#/components/schemas/QueueSong"
+      },
+      "songId": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "streamerId": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "createdAt",
+      "nonlistSong",
+      "nonlistTitle",
+      "nonlistArtist",
+      "songId",
+      "streamerId",
+      "playedAt",
+      "note",
+      "song",
+      "requests"
+    ],
+    "type": "object"
+  },
+  "IntegrationSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "kick": {
+        "$ref": "#/components/schemas/KickIntegrationSettings"
+      },
+      "streamelements": {
+        "$ref": "#/components/schemas/StreamelementsSettings"
+      },
+      "streamlabs": {
+        "$ref": "#/components/schemas/StreamlabsSettings"
+      },
+      "twitch": {
+        "$ref": "#/components/schemas/TwitchStreamerSettings"
+      },
+      "youtube": {
+        "$ref": "#/components/schemas/YoutubeStreamerSettings"
+      }
+    },
+    "type": "object"
+  },
+  "KickIntegrationSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "botConnected": {
+        "type": "boolean"
+      },
+      "follower": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "subscriber": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "user": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      }
+    },
+    "required": [
+      "botConnected",
+      "user",
+      "follower",
+      "subscriber"
+    ],
+    "type": "object"
+  },
+  "LearnListConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/LearnListConfig.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "addQuotaPerUser": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "maxActiveSongsPerUser": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "requireApproval": {
+        "type": "boolean"
+      },
+      "rewardMap": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/LearnListReward"
+        },
+        "type": "object"
+      },
+      "tokensPerVote": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "voteWeights": {
+        "$ref": "#/components/schemas/LearnListVoteWeights"
+      }
+    },
+    "required": [
+      "voteWeights"
+    ],
+    "type": "object"
+  },
+  "LearnListReward": {
+    "additionalProperties": false,
+    "properties": {
+      "action": {
+        "type": "string"
+      },
+      "votes": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "action"
+    ],
+    "type": "object"
+  },
+  "LearnListVoteWeights": {
+    "additionalProperties": false,
+    "properties": {
+      "default": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "follower": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "kickSubscriber": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "twitchTier1": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "twitchTier2": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "twitchTier3": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "youtubeMember": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "type": "object"
+  },
+  "NowPlayingDetails": {
+    "additionalProperties": false,
+    "properties": {
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "nonlistArtist": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistSong": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistTitle": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "note": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nowPlayingStartedAt": {
+        "format": "date-time",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "priority": {
+        "type": "string"
+      },
+      "requests": {
+        "items": {
+          "$ref": "#/components/schemas/Request"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "song": {
+        "$ref": "#/components/schemas/QueueSong"
+      },
+      "songId": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "streamerId": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "note",
+      "createdAt",
+      "songId",
+      "nonlistSong",
+      "nonlistTitle",
+      "nonlistArtist",
+      "streamerId",
+      "nowPlayingStartedAt",
+      "priority",
+      "song",
+      "requests"
+    ],
+    "type": "object"
+  },
+  "PermitConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "bypasses": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "default_duration_seconds": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "no_expiry": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "default_duration_seconds",
+      "no_expiry",
+      "bypasses"
+    ],
+    "type": "object"
+  },
+  "PlayHistoryDetails": {
+    "additionalProperties": false,
+    "properties": {
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "donationAmount": {
+        "format": "double",
+        "type": "number"
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "nonlistArtist": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistSong": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistTitle": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "note": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "playedAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "requests": {
+        "items": {
+          "$ref": "#/components/schemas/Request"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "song": {
+        "$ref": "#/components/schemas/PlayHistorySong"
+      },
+      "songId": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "startedAt": {
+        "format": "date-time",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "streamerId": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "updatedAt": {
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    "required": [
+      "song",
+      "requests",
+      "id",
+      "createdAt",
+      "donationAmount",
+      "nonlistSong",
+      "songId",
+      "streamerId",
+      "playedAt",
+      "note",
+      "startedAt",
+      "updatedAt",
+      "nonlistTitle",
+      "nonlistArtist"
+    ],
+    "type": "object"
+  },
+  "PlayHistoryResponseBody": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/PlayHistoryResponseBody.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/components/schemas/PlayHistoryDetails"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "token": {
+        "type": "string"
+      },
+      "total": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "items",
+      "total",
+      "token"
+    ],
+    "type": "object"
+  },
+  "PlayHistorySong": {
+    "additionalProperties": false,
+    "properties": {
+      "albumArt": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "artist": {
+        "type": "string"
+      },
+      "title": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "title",
+      "artist",
+      "albumArt"
+    ],
+    "type": "object"
+  },
+  "QueueDetails": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/QueueDetails.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "createdAt": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "nonlistArtist": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistSong": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "nonlistTitle": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "note": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "position": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "priority": {
+        "type": "string"
+      },
+      "requests": {
+        "items": {
+          "$ref": "#/components/schemas/Request"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "song": {
+        "$ref": "#/components/schemas/QueueSong"
+      },
+      "songId": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "streamerId": {
+        "format": "int32",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "note",
+      "createdAt",
+      "songId",
+      "nonlistSong",
+      "nonlistTitle",
+      "nonlistArtist",
+      "streamerId",
+      "position",
+      "priority",
+      "song",
+      "requests"
+    ],
+    "type": "object"
+  },
+  "QueuePageConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "public": {
+        "$ref": "#/components/schemas/QueuePageLayout"
+      },
+      "streamer": {
+        "$ref": "#/components/schemas/QueuePageLayout"
+      }
+    },
+    "type": "object"
+  },
+  "QueuePageLayout": {
+    "additionalProperties": false,
+    "properties": {
+      "columns": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "nowPlaying": {
+        "type": "string"
+      },
+      "rows": {
+        "items": {
+          "items": {
+            "$ref": "#/components/schemas/QueueSummaryColumn"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "summaryFirst": {
+        "type": "boolean"
+      }
+    },
+    "type": "object"
+  },
+  "QueueResponseBody": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/QueueResponseBody.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "items": {
+        "items": {
+          "$ref": "#/components/schemas/QueueDetails"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "playing": {
+        "$ref": "#/components/schemas/NowPlayingDetails"
+      },
+      "total": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "items",
+      "total"
+    ],
+    "type": "object"
+  },
+  "QueueSong": {
+    "additionalProperties": false,
+    "properties": {
+      "albumArt": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "artist": {
+        "type": "string"
+      },
+      "attributes": {
+        "items": {
+          "$ref": "#/components/schemas/QueueSongAttribute"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "capo": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "comment": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "duration": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "hasChords": {
+        "type": "boolean"
+      },
+      "hasLyrics": {
+        "type": "boolean"
+      },
+      "hasTabs": {
+        "type": "boolean"
+      },
+      "isNew": {
+        "type": "boolean"
+      },
+      "lastPlayed": {
+        "format": "date-time",
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "lastPlayedFrom": {
+        "type": "string"
+      },
+      "timesPlayed": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "title": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "title",
+      "artist",
+      "lastPlayed",
+      "lastPlayedFrom",
+      "timesPlayed",
+      "comment",
+      "capo",
+      "duration",
+      "hasTabs",
+      "hasLyrics",
+      "hasChords",
+      "isNew",
+      "attributes",
+      "albumArt"
+    ],
+    "type": "object"
+  },
+  "QueueSongAttribute": {
+    "additionalProperties": false,
+    "properties": {
+      "image": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "name",
+      "image"
+    ],
+    "type": "object"
+  },
+  "QueueSummaryColumn": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "tiles": {
+        "items": {
+          "$ref": "#/components/schemas/QueueSummaryTile"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "width": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "id",
+      "width",
+      "tiles"
+    ],
+    "type": "object"
+  },
+  "QueueSummaryTile": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "type": "string"
+      },
+      "metric": {
+        "type": "string"
+      },
+      "mode": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id",
+      "metric",
+      "mode"
+    ],
+    "type": "object"
+  },
+  "Request": {
+    "additionalProperties": false,
+    "properties": {
+      "amount": {
+        "format": "double",
+        "type": "number"
+      },
+      "createdAt": {
+        "type": "string"
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "mine": {
+        "type": "boolean"
+      },
+      "name": {
+        "type": "string"
+      },
+      "requestText": {
+        "type": "string"
+      },
+      "source": {
+        "type": "string"
+      },
+      "user": {
+        "$ref": "#/components/schemas/RequestUser"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "amount",
+      "requestText",
+      "source",
+      "createdAt",
+      "user"
+    ],
+    "type": "object"
+  },
+  "RequestTypeSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "concurrent": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "limit": {
+        "type": "boolean"
+      },
+      "requests": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "concurrent",
+      "enabled",
+      "limit",
+      "requests"
+    ],
+    "type": "object"
+  },
+  "RequestUser": {
+    "additionalProperties": false,
+    "properties": {
+      "platform": {
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "username",
+      "platform"
+    ],
+    "type": "object"
+  },
+  "SongListConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "artistSortIgnorePrefixes": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "titleSortIgnorePrefixes": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "StreamelementsSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "sendChatMessage": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "sendChatMessage"
+    ],
+    "type": "object"
+  },
+  "StreamerDetails": {
+    "additionalProperties": false,
+    "properties": {
+      "$schema": {
+        "description": "A URL to the JSON Schema for this object.",
+        "examples": [
+          "https://api.streamersonglist.com/schemas/StreamerDetails.json"
+        ],
+        "format": "uri",
+        "readOnly": true,
+        "type": "string"
+      },
+      "adminBypassRestrictions": {
+        "type": "boolean"
+      },
+      "adminSyncConfig": {
+        "$ref": "#/components/schemas/AdminSyncConfig"
+      },
+      "allowDuplicates": {
+        "type": "boolean"
+      },
+      "allowLiveLearns": {
+        "type": "boolean"
+      },
+      "alwaysShowRequestDialog": {
+        "type": "boolean"
+      },
+      "canAnonymousEnterName": {
+        "type": "boolean"
+      },
+      "canAnonymousRequest": {
+        "type": "boolean"
+      },
+      "canUserRequest": {
+        "type": "boolean"
+      },
+      "concurrentRequests": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "concurrentRequestsPerAdmin": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "concurrentRequestsPerAnonymous": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "concurrentRequestsPerUser": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "customTheme": {
+        "$ref": "#/components/schemas/CustomThemeColors"
+      },
+      "donationPage": {
+        "type": "string"
+      },
+      "donationsIgnoreLimits": {
+        "type": "boolean"
+      },
+      "embedOrigins": {
+        "type": "string"
+      },
+      "enableCrossPlatformRequests": {
+        "type": "boolean"
+      },
+      "eventConfig": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/EventConfigEntry"
+        },
+        "type": "object"
+      },
+      "favorite": {
+        "type": "boolean"
+      },
+      "featureConfig": {
+        "$ref": "#/components/schemas/FeatureConfig"
+      },
+      "fixedTokenPrice": {
+        "type": "boolean"
+      },
+      "homePageConfig": {
+        "description": "Home page panel configuration",
+        "type": [
+          "object",
+          "null"
+        ]
+      },
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "integrationSettings": {
+        "$ref": "#/components/schemas/IntegrationSettings"
+      },
+      "landingPageContent": {
+        "description": "Tiptap JSON document content",
+        "type": [
+          "object",
+          "null"
+        ]
+      },
+      "learnListConfig": {
+        "$ref": "#/components/schemas/LearnListConfig"
+      },
+      "limitAdminRequests": {
+        "type": "boolean"
+      },
+      "limitAnonymousRequests": {
+        "type": "boolean"
+      },
+      "liveLearnsNoSongFound": {
+        "type": "boolean"
+      },
+      "maxRequests": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "minAmount": {
+        "format": "double",
+        "type": "number"
+      },
+      "minLiveLearnAmount": {
+        "format": "double",
+        "type": "number"
+      },
+      "minTipAmountForQueueOrdering": {
+        "format": "double",
+        "type": "number"
+      },
+      "minTokensForBump": {
+        "format": "double",
+        "type": "number"
+      },
+      "minTokensToIgnoreLimits": {
+        "format": "double",
+        "type": "number"
+      },
+      "minutesBetweenRequests": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "newAttribute": {
+        "$ref": "#/components/schemas/StreamerNewAttribute"
+      },
+      "newDays": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "permitConfig": {
+        "$ref": "#/components/schemas/PermitConfig"
+      },
+      "platforms": {
+        "$ref": "#/components/schemas/StreamerPlatforms"
+      },
+      "promoteQueueToPlaying": {
+        "type": "boolean"
+      },
+      "queueOrderMode": {
+        "type": "string"
+      },
+      "queuePageConfig": {
+        "$ref": "#/components/schemas/QueuePageConfig"
+      },
+      "requestMode": {
+        "type": "string"
+      },
+      "requestText": {
+        "type": "string"
+      },
+      "requestsActive": {
+        "type": "boolean"
+      },
+      "requestsPerAdmin": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "requestsPerAnonymous": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "requestsPerUser": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "sessionLength": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "showDonationLink": {
+        "type": "boolean"
+      },
+      "songListConfig": {
+        "$ref": "#/components/schemas/SongListConfig"
+      },
+      "syncPlatformBans": {
+        "type": "boolean"
+      },
+      "theme": {
+        "type": "string"
+      },
+      "tokenConfig": {
+        "$ref": "#/components/schemas/TokenConfig"
+      },
+      "trackSongDuration": {
+        "type": "boolean"
+      },
+      "userId": {
+        "format": "int32",
+        "type": [
+          "integer",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "integrationSettings",
+      "platforms",
+      "favorite",
+      "id",
+      "userId",
+      "adminBypassRestrictions",
+      "allowDuplicates",
+      "allowLiveLearns",
+      "alwaysShowRequestDialog",
+      "canAnonymousEnterName",
+      "canAnonymousRequest",
+      "canUserRequest",
+      "concurrentRequests",
+      "concurrentRequestsPerAdmin",
+      "concurrentRequestsPerAnonymous",
+      "concurrentRequestsPerUser",
+      "donationPage",
+      "donationsIgnoreLimits",
+      "embedOrigins",
+      "enableCrossPlatformRequests",
+      "limitAdminRequests",
+      "limitAnonymousRequests",
+      "syncPlatformBans",
+      "liveLearnsNoSongFound",
+      "maxRequests",
+      "minAmount",
+      "minLiveLearnAmount",
+      "minTipAmountForQueueOrdering",
+      "minutesBetweenRequests",
+      "newDays",
+      "promoteQueueToPlaying",
+      "requestMode",
+      "requestText",
+      "requestsActive",
+      "requestsPerAdmin",
+      "requestsPerAnonymous",
+      "requestsPerUser",
+      "sessionLength",
+      "showDonationLink",
+      "theme",
+      "trackSongDuration",
+      "adminSyncConfig",
+      "customTheme",
+      "eventConfig",
+      "featureConfig",
+      "homePageConfig",
+      "landingPageContent",
+      "learnListConfig",
+      "permitConfig",
+      "tokenConfig",
+      "queuePageConfig",
+      "songListConfig",
+      "queueOrderMode",
+      "minTokensForBump",
+      "minTokensToIgnoreLimits",
+      "fixedTokenPrice"
+    ],
+    "type": "object"
+  },
+  "StreamerNewAttribute": {
+    "additionalProperties": false,
+    "properties": {
+      "id": {
+        "format": "int32",
+        "type": "integer"
+      },
+      "image": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "name": {
+        "type": "string"
+      },
+      "show": {
+        "type": "boolean"
+      },
+      "showSelector": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "name",
+      "image",
+      "show",
+      "showSelector"
+    ],
+    "type": "object"
+  },
+  "StreamerPlatform": {
+    "additionalProperties": false,
+    "properties": {
+      "displayName": {
+        "type": "string"
+      },
+      "platformID": {
+        "type": "string"
+      },
+      "profileImageUrl": {
+        "type": "string"
+      },
+      "username": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "username",
+      "displayName",
+      "platformID"
+    ],
+    "type": "object"
+  },
+  "StreamerPlatforms": {
+    "additionalProperties": false,
+    "properties": {
+      "kick": {
+        "$ref": "#/components/schemas/StreamerPlatform"
+      },
+      "none": {
+        "$ref": "#/components/schemas/StreamerPlatform"
+      },
+      "twitch": {
+        "$ref": "#/components/schemas/StreamerPlatform"
+      },
+      "youtube": {
+        "$ref": "#/components/schemas/StreamerPlatform"
+      }
+    },
+    "type": "object"
+  },
+  "StreamlabsSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "sendChatMessage": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "sendChatMessage"
+    ],
+    "type": "object"
+  },
+  "TokenConfig": {
+    "additionalProperties": false,
+    "properties": {
+      "chatSpendKeywords": {
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "array",
+          "null"
+        ]
+      },
+      "kickSub": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "tokenValiditySeconds": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "tokensPerBit": {
+        "format": "double",
+        "type": "number"
+      },
+      "tokensPerKick": {
+        "format": "double",
+        "type": "number"
+      },
+      "twitchSubTier1": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "twitchSubTier2": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "twitchSubTier3": {
+        "format": "int64",
+        "type": "integer"
+      }
+    },
+    "type": "object"
+  },
+  "TwitchStreamerSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "botConnected": {
+        "type": "boolean"
+      },
+      "follower": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "subscriberT1": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "subscriberT2": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "subscriberT3": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "user": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "vip": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      }
+    },
+    "required": [
+      "botConnected",
+      "user",
+      "follower",
+      "subscriberT1",
+      "subscriberT2",
+      "subscriberT3",
+      "vip"
+    ],
+    "type": "object"
+  },
+  "YoutubeStreamerSettings": {
+    "additionalProperties": false,
+    "properties": {
+      "botConnected": {
+        "type": "boolean"
+      },
+      "member": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "membershipLevels": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/RequestTypeSettings"
+        },
+        "type": "object"
+      },
+      "subscriber": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      },
+      "user": {
+        "$ref": "#/components/schemas/RequestTypeSettings"
+      }
+    },
+    "required": [
+      "botConnected",
+      "user",
+      "subscriber",
+      "member",
+      "membershipLevels"
+    ],
+    "type": "object"
+  }
+}

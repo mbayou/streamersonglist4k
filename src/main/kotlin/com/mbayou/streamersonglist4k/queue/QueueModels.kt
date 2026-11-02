@@ -25,9 +25,12 @@ data class NowPlayingDetails(
     val createdAt: Instant,
     val songId: SongId?,
     val nonlistSong: String?,
+    val nonlistTitle: String? = null,
+    val nonlistArtist: String? = null,
     val note: String?,
     val streamerId: StreamerId,
     val nowPlayingStartedAt: Instant?,
+    val priority: String? = null,
     val song: QueueSong,
     val requests: List<Request>?,
 )
@@ -39,9 +42,12 @@ data class QueueDetails(
     val createdAt: Instant,
     val songId: SongId?,
     val nonlistSong: String?,
+    val nonlistTitle: String? = null,
+    val nonlistArtist: String? = null,
     val note: String?,
     val streamerId: StreamerId,
     val position: Long,
+    val priority: String? = null,
     val song: QueueSong,
     val requests: List<Request>?,
 )
@@ -55,6 +61,12 @@ data class QueueSong(
     val comment: String?,
     val capo: String?,
     val attributes: List<QueueSongAttribute>?,
+    val duration: Int? = null,
+    val hasTabs: Boolean? = null,
+    val hasLyrics: Boolean? = null,
+    val hasChords: Boolean? = null,
+    val isNew: Boolean? = null,
+    val albumArt: String? = null,
 )
 
 data class CreateQueueRequest(
@@ -90,13 +102,14 @@ data class UpdateQueueRequestRequest(
 data class ClearQueueResponseBody(
     @JsonProperty("\$schema")
     val schema: String? = null,
-    val message: String,
+    val deleted: Long,
 )
 
 data class DeleteQueueRequestResponseBody(
     @JsonProperty("\$schema")
     val schema: String? = null,
-    val message: String,
+    val queueDeleted: Boolean,
+    val queue: QueueDetails? = null,
 )
 
 enum class QueueInsertMethod(override val apiValue: String) : ApiEnum {

@@ -20,9 +20,10 @@ class StreamerSonglistClient(
     configuration: StreamerSonglistConfiguration,
     private val defaultAuthentication: StreamerSonglistAuthentication? = null,
 ) {
-    private val httpClient = HttpClient.newHttpClient()
+    private val httpClient = HttpClient.newBuilder().connectTimeout(configuration.requestTimeout).build()
     private val objectMapper: ObjectMapper = ObjectMapper()
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true)
         .registerModule(JavaTimeModule())
         .registerModule(
             KotlinModule.Builder()

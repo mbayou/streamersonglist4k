@@ -25,7 +25,10 @@ value class StreamerSonglistChannel @JsonCreator(mode = JsonCreator.Mode.DELEGAT
             StreamerSonglistChannel("streamer:${streamerId.value}-play_history")
 
         fun savedQueue(streamerId: StreamerId): StreamerSonglistChannel =
-            StreamerSonglistChannel("streamer:${streamerId.value}-saved-queue")
+            StreamerSonglistChannel("streamer:${streamerId.value}-saved_queue")
+
+        fun settings(streamerId: StreamerId): StreamerSonglistChannel =
+            StreamerSonglistChannel("streamer:${streamerId.value}-settings")
 
         fun admin(streamerId: StreamerId): StreamerSonglistChannel =
             StreamerSonglistChannel("streamer-admin:${streamerId.value}")
@@ -43,19 +46,39 @@ sealed interface StreamerSonglistEvent {
     val type: String
 
     data class QueueAdd(
-        val queue: QueueDetails,
+        val queue: QueueDetails?,
     ) : StreamerSonglistEvent {
         override val type: String = "queue_add"
     }
 
     data class QueueRemove(
-        val queueId: QueueId,
+        val queueId: QueueId?,
     ) : StreamerSonglistEvent {
         override val type: String = "queue_remove"
     }
 
     data object QueueUpdate : StreamerSonglistEvent {
         override val type: String = "queue_update"
+    }
+
+    data class NowPlayingUpdate(val update: NowPlayingChange?) : StreamerSonglistEvent {
+        override val type = "now_playing_update"
+    }
+
+    data class QueueClear(val cleared: ClearedQueue?) : StreamerSonglistEvent {
+        override val type = "queue_clear"
+    }
+
+    data class QueueReorder(val order: QueueOrder?) : StreamerSonglistEvent {
+        override val type = "queue_reorder"
+    }
+
+    data class PlayHistoryRemove(val removed: RemovedHistory?) : StreamerSonglistEvent {
+        override val type = "play_history_remove"
+    }
+
+    data class SettingsUpdate(val update: StreamerSettingsChange?) : StreamerSonglistEvent {
+        override val type = "streamer_settings_update"
     }
 
     data object PlayHistoryAdd : StreamerSonglistEvent {
@@ -75,3 +98,15 @@ sealed interface StreamerSonglistEvent {
 fun interface StreamerSonglistEventListener {
     fun onEvent(envelope: StreamerSonglistEventEnvelope)
 }
+
+data class NowPlayingChange(
+    val streamerId: StreamerId,
+    val playing: com.mbayou.streamersonglist4k.queue.NowPlayingDetails?,
+    val previousId: QueueId?,
+)
+
+data class ClearedQueue(val streamerId: StreamerId, val removedIds: List<QueueId>, val deleted: Int)
+data class QueueOrder(val streamerId: StreamerId, val items: List<QueueRank>, val playingId: QueueId?)
+data class QueueRank(val id: QueueId, val position: Int)
+data class RemovedHistory(val streamerId: StreamerId, val playHistoryId: com.mbayou.streamersonglist4k.api.PlayHistoryId)
+data class StreamerSettingsChange(val streamerId: StreamerId, val fields: JsonNode)

@@ -83,6 +83,7 @@ class AuthorizationClient(
             "${encode(key)}=${encode(value)}"
         }
         val request = HttpRequest.newBuilder()
+                .timeout(configuration.requestTimeout)
             .uri(URI.create("${configuration.oAuthBaseUrl}/token"))
             .header("Accept", "application/json")
             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -93,7 +94,8 @@ class AuthorizationClient(
         val body = response.body()
         if (response.statusCode() !in 200..299) {
             val error = runCatching { mapper.readValue(body, ErrorModel::class.java) }.getOrNull()
-            throw StreamerSonglistApiException(response.statusCode(), error, body)
+            throw OAuthTokenException(response.statusCode(), error, body,
+                runCatching { mapper.readTree(body).get("error")?.asText() }.getOrNull())
         }
         val tokenResponse = mapper.readValue(body, OAuthTokenResponse::class.java)
         return tokenResponse.copy(rawResponseBody = body)

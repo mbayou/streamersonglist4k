@@ -6,6 +6,8 @@ import com.mbayou.streamersonglist4k.StreamerSonglistConfiguration
 import com.mbayou.streamersonglist4k.api.QueueId
 import com.mbayou.streamersonglist4k.api.StreamerSonglistAuthentication
 import com.mbayou.streamersonglist4k.queue.QueueDetails
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.WebSocket
@@ -31,7 +33,7 @@ class EventClient(
         return connectInternal(
             channels = channels,
             listener = listener,
-            token = (authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection")).value,
+            authentication = authentication ?: defaultAuthentication ?: error("Authentication is required for the event connection"),
         )
     }
 
@@ -42,24 +44,29 @@ class EventClient(
         return connectInternal(
             channels = channels,
             listener = listener,
-            token = null,
+            authentication = null,
         )
     }
 
     private fun connectInternal(
         channels: Collection<StreamerSonglistChannel>,
         listener: StreamerSonglistEventListener,
-        token: String?,
+        authentication: StreamerSonglistAuthentication?,
     ): CompletableFuture<EventSession> {
         val lifecycle = EventSessionLifecycle()
-        val protocol = EventSessionProtocol(mapper, parser, listener, lifecycle)
+        val protocol = EventSessionProtocol(mapper, parser, listener, lifecycle, configuration.eventCommandTimeout)
         val webSocketListener = Listener(protocol)
-        return httpClient
-            .newWebSocketBuilder()
-            .buildAsync(URI.create(configuration.eventsBaseUrl), webSocketListener)
-            .thenCompose { webSocket ->
+        val builder = httpClient.newWebSocketBuilder().connectTimeout(configuration.requestTimeout)
+        if (authentication != null) {
+            builder.header("Authorization", authentication.headerValue)
+            if (authentication is StreamerSonglistAuthentication.OAuthAccessToken) {
+                builder.header("Client-Id", configuration.clientId)
+            }
+        }
+        val opened = builder.buildAsync(URI.create(configuration.eventsBaseUrl), webSocketListener)
+        val connecting = opened.thenCompose { webSocket ->
                 val session = protocol.attach(webSocket)
-                session.connect(token)
+                session.connect()
                     .thenCompose {
                         channels.fold(CompletableFuture.completedFuture(Unit)) { completion, channel ->
                             completion.thenCompose { session.subscribe(channel) }
@@ -72,6 +79,13 @@ class EventClient(
                         }
                     }
             }
+        connecting.whenComplete { _, error ->
+            if (error != null) {
+                protocol.abort()
+                opened.thenAccept { it.abort() }
+            }
+        }
+        return connecting
     }
 
     fun parseMessage(message: String): List<StreamerSonglistEventEnvelope> {
@@ -127,6 +141,7 @@ internal class EventSessionProtocol(
     private val parser: EventMessageParser,
     private val eventListener: StreamerSonglistEventListener,
     private val lifecycle: EventSessionLifecycle,
+    private val commandTimeout: Duration = Duration.ofSeconds(15),
 ) {
     private val nextId = AtomicInteger(1)
     private val pendingCommands = ConcurrentHashMap<Int, PendingCommand>()
@@ -162,11 +177,17 @@ internal class EventSessionProtocol(
 
     fun close(statusCode: Int, reason: String): CompletableFuture<WebSocket> {
         closeRequested.set(true)
+        failPendingCommands(EventSessionClosedException(statusCode, reason, true))
+        lifecycle.complete()
         return requireWebSocket().sendClose(statusCode, reason)
+            .orTimeout(commandTimeout.toMillis(), TimeUnit.MILLISECONDS)
+            .whenComplete { _, error -> if (error != null) webSocket?.abort() }
     }
 
     fun abort() {
         closeRequested.set(true)
+        failPendingCommands(EventSessionClosedException(WebSocket.NORMAL_CLOSURE, "aborted", true))
+        lifecycle.complete()
         webSocket?.abort()
     }
 
@@ -253,6 +274,13 @@ internal class EventSessionProtocol(
                 }
             }
 
+        replyFuture.orTimeout(commandTimeout.toMillis(), TimeUnit.MILLISECONDS).whenComplete { _, error ->
+            pendingCommands.remove(replyId)
+            if (error != null) {
+                handleError(error)
+                webSocket?.abort()
+            }
+        }
         return replyFuture
     }
 
@@ -261,10 +289,9 @@ internal class EventSessionProtocol(
     }
 
     private fun failPendingCommands(error: Throwable) {
-        pendingCommands.values.forEach { pending ->
-            pending.completion.completeExceptionally(error)
-        }
+        val pending = pendingCommands.values.toList()
         pendingCommands.clear()
+        pending.forEach { it.completion.completeExceptionally(error) }
     }
 
     private fun requireWebSocket(): WebSocket {
@@ -315,10 +342,15 @@ internal class EventMessageParser(private val mapper: ObjectMapper) {
 
     private fun parseEvent(type: String, payload: JsonNode?): StreamerSonglistEvent {
         return when (type) {
-            "queue_add" -> StreamerSonglistEvent.QueueAdd(mapper.treeToValue(unwrapData(payload), QueueDetails::class.java))
+            "queue_add" -> StreamerSonglistEvent.QueueAdd(decodePayload(payload, QueueDetails::class.java))
             "queue_remove" -> StreamerSonglistEvent.QueueRemove(
-                QueueId(requireNotNull(payload?.get("id")?.asInt()) { "queue_remove payload requires id" })
+                payload?.takeUnless { it.isNull }?.get("id")?.let { QueueId(it.intValue()) }
             )
+            "now_playing_update" -> StreamerSonglistEvent.NowPlayingUpdate(decodePayload(payload, NowPlayingChange::class.java))
+            "queue_clear" -> StreamerSonglistEvent.QueueClear(decodePayload(payload, ClearedQueue::class.java))
+            "queue_reorder" -> StreamerSonglistEvent.QueueReorder(decodePayload(payload, QueueOrder::class.java))
+            "play_history_remove" -> StreamerSonglistEvent.PlayHistoryRemove(decodePayload(payload, RemovedHistory::class.java))
+            "streamer_settings_update" -> StreamerSonglistEvent.SettingsUpdate(decodePayload(payload, StreamerSettingsChange::class.java))
             "queue_update" -> StreamerSonglistEvent.QueueUpdate
             "play_history_add" -> StreamerSonglistEvent.PlayHistoryAdd
             "saved_queue_update" -> StreamerSonglistEvent.SavedQueueUpdate
@@ -326,8 +358,9 @@ internal class EventMessageParser(private val mapper: ObjectMapper) {
         }
     }
 
-    private fun unwrapData(payload: JsonNode?): JsonNode {
-        return requireNotNull(payload?.get("data") ?: payload) { "Event payload is required" }
+    private fun <T> decodePayload(payload: JsonNode?, type: Class<T>): T? {
+        if (payload == null || payload.isNull) return null
+        return mapper.treeToValue(payload, type)
     }
 }
 
